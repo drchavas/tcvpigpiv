@@ -28,9 +28,9 @@ jobs:
 
       - name: Build release distributions
         run: |
-          # NOTE: put your own distribution build steps here.
           python -m pip install build
           python -m build
+        working-directory: ${{ github.workspace }}
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
@@ -68,3 +68,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+        working-directory: ${{ github.workspace }}
