@@ -1,46 +1,47 @@
 
 from tcwindprofile.tc_outer_radius_estimate import estimate_outer_radius
+from tcwindprofile.tc_outer_windprofile import outer_windprofile
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#%% Function for E04 outer wind profile with R0mean input
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-def E04_outerwind_r0input_nondim_MM0(r0, fcor, C_d, w_cool, Nr):
-    """
-    Computes nondimensional radial profile of angular momentum (M/M0) versus (r/r0).
-    """
+# #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# #%% Function for E04 outer wind profile with R0mean input
+# #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# def E04_outerwind_r0input_nondim_MM0(r0, fcor, Cd, w_cool, Nr):
+#     """
+#     Computes nondimensional radial profile of angular momentum (M/M0) versus (r/r0).
+#     """
     
-    import numpy as np
+#     import numpy as np
     
-    fcor = abs(fcor)
-    M0 = 0.5 * fcor * r0**2
-    drfracr0 = 0.001
-    if r0 > 2500 * 1000 or r0 < 200 * 1000:
-        drfracr0 = drfracr0 / 10.0
-    if Nr > 1 / drfracr0:
-        Nr = 1 / drfracr0
-    rfracr0_max = 1
-    rfracr0_min = rfracr0_max - (Nr - 1) * drfracr0
-    rrfracr0 = np.arange(rfracr0_min, rfracr0_max + drfracr0, drfracr0)
-    MMfracM0 = np.full(rrfracr0.shape, np.nan)
-    MMfracM0[-1] = 1
-    rfracr0_temp = rrfracr0[-2]  # one step inwards from r0
-    MfracM0_temp = MMfracM0[-1]
-    MMfracM0[-2] = MfracM0_temp
+#     fcor = abs(fcor)
+#     M0 = 0.5 * fcor * r0**2
+#     drfracr0 = 0.001
+#     if r0 > 2500 * 1000 or r0 < 200 * 1000:
+#         drfracr0 = drfracr0 / 10.0
+#     if Nr > 1 / drfracr0:
+#         Nr = 1 / drfracr0
+#     rfracr0_max = 1
+#     rfracr0_min = rfracr0_max - (Nr - 1) * drfracr0
+#     rrfracr0 = np.arange(rfracr0_min, rfracr0_max + drfracr0, drfracr0)
+#     MMfracM0 = np.full(rrfracr0.shape, np.nan)
+#     MMfracM0[-1] = 1
+#     rfracr0_temp = rrfracr0[-2]  # one step inwards from r0
+#     MfracM0_temp = MMfracM0[-1]
+#     MMfracM0[-2] = MfracM0_temp
 
-    # Piecewise linear fit parameters from Donelan2004_fit.m
-    C_d_lowV = 6.2e-4
-    V_thresh1 = 6
-    V_thresh2 = 35.4
-    C_d_highV = 2.35e-3
-    linear_slope = (C_d_highV - C_d_lowV) / (V_thresh2 - V_thresh1)
+#     # Piecewise linear fit parameters from Donelan2004_fit.m
+#     Cd_lowV = 6.2e-4
+#     V_thresh1 = 6
+#     V_thresh2 = 35.4
+#     Cd_highV = 2.35e-3
+#     linear_slope = (Cd_highV - Cd_lowV) / (V_thresh2 - V_thresh1)
 
-    for ii in range(int(Nr) - 2):
-        gam = C_d * fcor * r0 / w_cool
-        dMfracM0_drfracr0_temp = gam * ((MfracM0_temp - rfracr0_temp**2)**2) / (1 - rfracr0_temp**2)
-        MfracM0_temp = MfracM0_temp - dMfracM0_drfracr0_temp * drfracr0
-        rfracr0_temp = rfracr0_temp - drfracr0
-        MMfracM0[-ii - 2 - 1] = MfracM0_temp
-    return rrfracr0, MMfracM0
+#     for ii in range(int(Nr) - 2):
+#         gam = Cd * fcor * r0 / w_cool
+#         dMfracM0_drfracr0_temp = gam * ((MfracM0_temp - rfracr0_temp**2)**2) / (1 - rfracr0_temp**2)
+#         MfracM0_temp = MfracM0_temp - dMfracM0_drfracr0_temp * drfracr0
+#         rfracr0_temp = rfracr0_temp - drfracr0
+#         MMfracM0[-ii - 2 - 1] = MfracM0_temp
+#     return rrfracr0, MMfracM0
 
 def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     
@@ -137,19 +138,21 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     #%%   from R34kt, it may blow up (math is weird)
     #%% - Could do a simpler approximate profile instead, but this solution is
     #%%   just as fast doing some sort of curve fit, so might as well use exact
-    
-    Nr = 100000
-    rrfracr0_E04, MMfracM0_E04 = E04_outerwind_r0input_nondim_MM0(R0mean_dMdrcnstmod, fcor, Cd, w_cool, Nr)
-    M0_E04approx = 0.5 * fcor * R0mean_dMdrcnstmod**2
-    rr_E04approx = rrfracr0_E04 * R0mean_dMdrcnstmod
-    vv_E04approx = (M0_E04approx / R0mean_dMdrcnstmod) * ((MMfracM0_E04 / rrfracr0_E04) - rrfracr0_E04)
-    vv_E04approx[vv_E04approx > 2 * V34kt_ms] = np.nan
-    
-    # Zoom into relevant radii
-    r0_plot = 1.2 * R0mean_dMdrcnstmod
-    rr = rr_full[rr_full < r0_plot]
-    # Interpolate approx-E04 solution to original radius vector
-    vv_E04approx = np.interp(rr, rr_E04approx, vv_E04approx)
+ 
+    # Returns:
+    #   rr_full : radii [m]
+    #   vv : wind speeds [m/s]
+    rr_outer_m, vv_outer_ms = outer_windprofile(
+    r0_m=R0mean_dMdrcnstmod,     # or your computed R0mean_dMdrcnstmod
+    fcor=fcor,
+    Cd=Cd,
+    w_cool=w_cool,
+    V34kt_ms=V34kt_ms,
+    )
+    r0_plot = np.max(rr_outer_m)
+    rr_full=rr_full[rr_full<=r0_plot]
+    vv_E04approx = np.interp(rr_full, rr_outer_m, vv_outer_ms)
+
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #%% STEP 2) Inner region wind profile (r<=R34kt)
@@ -158,28 +161,28 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     #%% Simple modified Rankine profile between R34kt and Rmax
     #%% With quadratic profile inside of Rmax
     alp_outer = np.log(Vmaxmean_ms / V34kt_ms) / np.log(Rmax_m / R34ktmean_m)
-    vv_outsideRmax = np.full(rr.shape, np.nan)
-    rr_outer_mask = rr > Rmax_m
-    vv_outsideRmax[rr_outer_mask] = Vmaxmean_ms * (rr[rr_outer_mask] / Rmax_m)**alp_outer
+    vv_outsideRmax = np.full(rr_full.shape, np.nan)
+    rr_outer_mask = rr_full > Rmax_m
+    vv_outsideRmax[rr_outer_mask] = Vmaxmean_ms * (rr_full[rr_outer_mask] / Rmax_m)**alp_outer
     alp_eye = 2  # quadratic profile in eye
-    vv_eye = Vmaxmean_ms * (rr / Rmax_m)**alp_eye
-    vv_MR = np.concatenate((vv_eye[rr <= Rmax_m], vv_outsideRmax[(rr > Rmax_m) & (rr < r0_plot)]))
+    vv_eye = Vmaxmean_ms * (rr_full / Rmax_m)**alp_eye
+    vv_MR = np.concatenate((vv_eye[rr_full <= Rmax_m], vv_outsideRmax[rr_full > Rmax_m]))
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #%% STEP 3) Merge inner and outer wind profiles
     #%% Simple exponential smoother of (inner-outer) moving outwards from R34kt
     
     # No smoothing: direct merge at R34ktmean_m -- will *not* match dV/dr without smoothing
-    # vv_MR_E04_R34ktmean_nosmooth = np.concatenate((vv_MR[rr <= R34ktmean_m], vv_E04approx[rr > R34ktmean_m]))
+    # vv_MR_E04_R34ktmean_nosmooth = np.concatenate((vv_MR[rr_full <= R34ktmean_m], vv_E04approx[rr_full > R34ktmean_m]))
     
     # Match dV/dr at R34kt: exponential smoother of (inner-outer) moving outwards from R34kt
-    ii_temp = rr > R34ktmean_m
-    rr_beyondR34ktmean = rr[ii_temp]
+    ii_temp = rr_full > R34ktmean_m
+    rr_beyondR34ktmean = rr_full[ii_temp]
     vv_MR_beyondR34ktmean = vv_MR[ii_temp]
     vv_E04approx_beyondR34ktmean = vv_E04approx[ii_temp]
     v_adj = -(vv_E04approx_beyondR34ktmean - vv_MR_beyondR34ktmean) * np.exp(-(rr_beyondR34ktmean - R34ktmean_m) / R34ktmean_m)
     vv_E04approx_adj = vv_E04approx_beyondR34ktmean + v_adj
-    vv_MR_E04_R34ktmean = np.concatenate((vv_MR[rr <= R34ktmean_m], vv_E04approx_adj))
+    vv_MR_E04_R34ktmean = np.concatenate((vv_MR[rr_full <= R34ktmean_m], vv_E04approx_adj))
     
     if plot:
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -187,8 +190,8 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         # Figure dimensions: original 30 cm x 30 cm, now half: 15 cm x 15 cm (converted to inches)
         fig, ax = plt.subplots(figsize=(15/2.54, 15/2.54))
-        ax.plot(rr / 1000, vv_MR_E04_R34ktmean, 'm-', linewidth=3)
-        # ax.plot(rr / 1000, vv_MR_E04_R34ktmean_nosmooth, 'g:', linewidth=3)
+        ax.plot(rr_full / 1000, vv_MR_E04_R34ktmean, 'm-', linewidth=3)
+        # ax.plot(rr_full / 1000, vv_MR_E04_R34ktmean_nosmooth, 'g:', linewidth=3)
         ax.plot(Rmax_m / 1000, Vmaxmean_ms, 'k.', markersize=20)
         ax.plot(R34ktmean_m / 1000, V34kt_ms, 'k.', markersize=20)
         ax.plot(R0mean_dMdrcnstmod / 1000, 0, 'm*', markersize=20)
@@ -215,7 +218,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
         
     # Return radius [km], wind speed [m/s], and R0mean [km]
     # Interpolate to 1 km resolution
-    rr_km = rr / 1000
+    rr_km = rr_full / 1000
     rr_km_interp = np.arange(0, rr_km.max(), 0.1)  # 0.1 km resolution
     vv_mps_interp = np.interp(rr_km_interp, rr_km, vv_MR_E04_R34ktmean)
     return rr_km_interp, vv_mps_interp, R0mean_dMdrcnstmod / 1000
