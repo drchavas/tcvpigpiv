@@ -1,3 +1,6 @@
+
+from tcwindprofile.tc_outer_radius_estimate import estimate_outer_radius
+
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #%% Function for E04 outer wind profile with R0mean input
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,7 +42,8 @@ def E04_outerwind_r0input_nondim_MM0(r0, fcor, C_d, w_cool, Nr):
         MMfracM0[-ii - 2 - 1] = MfracM0_temp
     return rrfracr0, MMfracM0
 
-def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat):
+def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
+    
 
     import numpy as np
     import math
@@ -78,7 +82,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat):
     
     #%% Calculate some params
     ms_kt = 0.5144444             # 1 kt = 0.514444 m/s
-    V34kt = 34 * ms_kt            # [m/s]; outermost radius to calculate profile
+    V34kt_ms = 34 * ms_kt            # [m/s]; outermost radius to calculate profile
     km_nautmi = 1.852
     omeg = 7.292e-5  # Earth's rotation rate
     fcor = 2 * omeg * math.sin(math.radians(abs(lat)))  # [s^-1]
@@ -96,20 +100,33 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat):
     #%% STEP 1a) Very good estimate of outer edge of storm, R0mean (where v=0)
     #%% Analytic approximation of R0mean, from physical model of non-convecting wind profile (Emanuel 2004; Chavas et al. 2015 JAS)
     # Environmental params
+    # Cd = 1.5e-3  # [-]
+    # w_cool = 2 / 1000  # [m/s]
+    # chi = 2 * Cd / w_cool
+    # Mfit = R34ktmean_m * V34kt_ms + 0.5 * fcor * R34ktmean_m**2
+    
+    # beta = 1.35
+    # c1 = 0.5 * fcor
+    # c2 = 0.5 * beta * fcor * R34ktmean_m
+    # c3 = -Mfit
+    # c4 = -R34ktmean_m * Mfit - chi * (beta * R34ktmean_m * V34kt_ms)**2
+    # coeffs = [c1, c2, c3, c4]
+    # x = np.roots(coeffs).real
+    # R0mean_candidates = x[x > 0]
+    # R0mean_dMdrcnstmod = R0mean_candidates[0]
+    
     Cd = 1.5e-3  # [-]
     w_cool = 2 / 1000  # [m/s]
-    chi = 2 * Cd / w_cool
-    Mfit = R34ktmean_m * V34kt + 0.5 * fcor * R34ktmean_m**2
-    
     beta = 1.35
-    c1 = 0.5 * fcor
-    c2 = 0.5 * beta * fcor * R34ktmean_m
-    c3 = -Mfit
-    c4 = -R34ktmean_m * Mfit - chi * (beta * R34ktmean_m * V34kt)**2
-    coeffs = [c1, c2, c3, c4]
-    x = np.roots(coeffs).real
-    R0mean_candidates = x[x > 0]
-    R0mean_dMdrcnstmod = R0mean_candidates[0]
+    R0mean_dMdrcnstmod = estimate_outer_radius(
+    R34ktmean_m=R34ktmean_m,
+    V34kt_ms=V34kt_ms,
+    fcor=fcor,
+    Cd=Cd,
+    w_cool=w_cool,
+    beta=beta
+    )
+
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,7 +143,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat):
     M0_E04approx = 0.5 * fcor * R0mean_dMdrcnstmod**2
     rr_E04approx = rrfracr0_E04 * R0mean_dMdrcnstmod
     vv_E04approx = (M0_E04approx / R0mean_dMdrcnstmod) * ((MMfracM0_E04 / rrfracr0_E04) - rrfracr0_E04)
-    vv_E04approx[vv_E04approx > 2 * V34kt] = np.nan
+    vv_E04approx[vv_E04approx > 2 * V34kt_ms] = np.nan
     
     # Zoom into relevant radii
     r0_plot = 1.2 * R0mean_dMdrcnstmod
@@ -140,7 +157,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat):
     
     #%% Simple modified Rankine profile between R34kt and Rmax
     #%% With quadratic profile inside of Rmax
-    alp_outer = np.log(Vmaxmean_ms / V34kt) / np.log(Rmax_m / R34ktmean_m)
+    alp_outer = np.log(Vmaxmean_ms / V34kt_ms) / np.log(Rmax_m / R34ktmean_m)
     vv_outsideRmax = np.full(rr.shape, np.nan)
     rr_outer_mask = rr > Rmax_m
     vv_outsideRmax[rr_outer_mask] = Vmaxmean_ms * (rr[rr_outer_mask] / Rmax_m)**alp_outer
@@ -164,43 +181,43 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat):
     vv_E04approx_adj = vv_E04approx_beyondR34ktmean + v_adj
     vv_MR_E04_R34ktmean = np.concatenate((vv_MR[rr <= R34ktmean_m], vv_E04approx_adj))
     
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    #%% Make plot
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    # Figure dimensions: original 30 cm x 30 cm, now half: 15 cm x 15 cm (converted to inches)
-    fig, ax = plt.subplots(figsize=(15/2.54, 15/2.54))
-    ax.plot(rr / 1000, vv_MR_E04_R34ktmean, 'm-', linewidth=3)
-    # ax.plot(rr / 1000, vv_MR_E04_R34ktmean_nosmooth, 'g:', linewidth=3)
-    ax.plot(Rmax_m / 1000, Vmaxmean_ms, 'k.', markersize=20)
-    ax.plot(R34ktmean_m / 1000, V34kt, 'k.', markersize=20)
-    ax.plot(R0mean_dMdrcnstmod / 1000, 0, 'm*', markersize=20)
-    ax.set_xlabel('radius [km]')
-    ax.set_ylabel('azimuthal wind speed [m/s]')
-    ax.axis([0, 1.1 * R0mean_dMdrcnstmod / 1000, 0, 1.1 * Vmaxmean_ms])
-    # ax.axis([0, 600, 0, 1.1 * Vmaxmean_ms])
-    ax.set_title('Complete wind profile (ModRank inner + E04approx outer)', fontsize=12)
-    
-    # Annotate the top right corner with "Inputs:" and the values of Vmaxmean_ms, Rmax_m, (R34ktmean_m, V34kt), and lat
-    annotation = (f"Inputs:\n"
-                  f"Vmax_mean = {Vmaxmean_ms:.1f} m/s\n"
-                  f"Rmax = {Rmax_m/1000:.1f} km\n"
-                  f"(R34kt_mean, V34kt) = ({R34ktmean_m/1000:.1f} km, {V34kt:.1f} m/s)\n"
-                  f"lat = {lat:.1f}°N\n"
-                  f"\n"
-                  f"Output:\n"
-                  f"R0_mean = {R0mean_dMdrcnstmod / 1000:.1f} km")
-    ax.text(0.95, 0.95, annotation, transform=ax.transAxes, ha='right', va='top',
-            fontsize=10, bbox=dict(facecolor='white', edgecolor='none', alpha=0.7))
-    
-    plt.savefig('Operational_demo_vmaxR34ktRmax_to_windprofile.jpg', format='jpeg')
-    plt.show()
-    
+    if plot:
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        #%% Make plot
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        # Figure dimensions: original 30 cm x 30 cm, now half: 15 cm x 15 cm (converted to inches)
+        fig, ax = plt.subplots(figsize=(15/2.54, 15/2.54))
+        ax.plot(rr / 1000, vv_MR_E04_R34ktmean, 'm-', linewidth=3)
+        # ax.plot(rr / 1000, vv_MR_E04_R34ktmean_nosmooth, 'g:', linewidth=3)
+        ax.plot(Rmax_m / 1000, Vmaxmean_ms, 'k.', markersize=20)
+        ax.plot(R34ktmean_m / 1000, V34kt_ms, 'k.', markersize=20)
+        ax.plot(R0mean_dMdrcnstmod / 1000, 0, 'm*', markersize=20)
+        ax.set_xlabel('radius [km]')
+        ax.set_ylabel('azimuthal wind speed [m/s]')
+        ax.axis([0, 1.1 * R0mean_dMdrcnstmod / 1000, 0, 1.1 * Vmaxmean_ms])
+        # ax.axis([0, 600, 0, 1.1 * Vmaxmean_ms])
+        ax.set_title('Complete wind profile (ModRank inner + E04approx outer)', fontsize=12)
+        
+        # Annotate the top right corner with "Inputs:" and the values of Vmaxmean_ms, Rmax_m, (R34ktmean_m, V34kt_ms), and lat
+        annotation = (f"Inputs:\n"
+                      f"Vmax_mean = {Vmaxmean_ms:.1f} m/s\n"
+                      f"Rmax = {Rmax_m/1000:.1f} km\n"
+                      f"(R34kt_mean, V34kt_ms) = ({R34ktmean_m/1000:.1f} km, {V34kt_ms:.1f} m/s)\n"
+                      f"lat = {lat:.1f}°N\n"
+                      f"\n"
+                      f"Output:\n"
+                      f"R0_mean = {R0mean_dMdrcnstmod / 1000:.1f} km")
+        ax.text(0.95, 0.95, annotation, transform=ax.transAxes, ha='right', va='top',
+                fontsize=10, bbox=dict(facecolor='white', edgecolor='none', alpha=0.7))
+        
+        plt.savefig('Operational_demo_vmaxR34ktRmax_to_windprofile.jpg', format='jpeg')
+        plt.show()
+        
     # Return radius [km], wind speed [m/s], and R0mean [km]
     # Interpolate to 1 km resolution
     rr_km = rr / 1000
     rr_km_interp = np.arange(0, rr_km.max(), 0.1)  # 0.1 km resolution
     vv_mps_interp = np.interp(rr_km_interp, rr_km, vv_MR_E04_R34ktmean)
-    
     return rr_km_interp, vv_mps_interp, R0mean_dMdrcnstmod / 1000
 
 
