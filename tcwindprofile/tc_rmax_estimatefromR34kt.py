@@ -68,8 +68,8 @@ def predict_Rmax_from_R34kt(
       Rmax_predict_km_biasadjgt60km = (1/0.76)*(Rmax_predict_km-9.02)
       Rmax_predict_nautmi_biasadjgt60km = Rmax_predict_km_biasadjgt60km / km_nautmi
       # print('Rmax_predict_km_biasadjgt60km=', Rmax_predict_km_biasadjgt60km,' km =', Rmax_predict_nautmi_biasadjgt60km,' naut mi')
-      print('Rmax estimation from R34kt: final bias adjustment applied for Rmax>60km, based on CK22')
-    else:
-      print('Rmax estimation from R34kt: no final bias adjustment (only done for Rmax>60km)')
+      # print('Rmax estimation from R34kt: final bias adjustment applied for Rmax>60km, based on CK22')
+    # else:
+      # print('Rmax estimation from R34kt: no final bias adjustment (only done for Rmax>60km)')
 
     return Rmax_predict_km

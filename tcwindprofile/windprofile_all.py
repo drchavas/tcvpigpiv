@@ -59,7 +59,7 @@ def run_full_wind_model(
     )
 
     # 2) Estimate wind profile + R0 (CK22 + Emanuel04)
-    print(Vmaxmean_ms,Rmax_km,R34ktmean_km,lat,plot)
+    # print(Vmaxmean_ms,Rmax_km,R34ktmean_km,lat,plot)
     rr_km, vv_ms, R0_km = generate_wind_profile(
         Vmaxmean_ms=Vmaxmean_ms,
         Rmax_km=Rmax_km,
@@ -69,7 +69,7 @@ def run_full_wind_model(
     )
 
     # 3) Estimate Pmin (CKK25)
-    print(VmaxNHC_ms,R34ktmean_km,lat,Vtrans_ms,Penv_mb)
+    # print(VmaxNHC_ms,R34ktmean_km,lat,Vtrans_ms,Penv_mb)
     Pmin_estimate_mb, dP_estimate_mb = predict_Pmin_from_R34kt(
         VmaxNHC_ms=VmaxNHC_ms,
         R34ktmean_km=R34ktmean_km,
