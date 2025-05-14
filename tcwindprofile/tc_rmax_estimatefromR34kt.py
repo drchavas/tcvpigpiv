@@ -1,4 +1,4 @@
-# Rmax_predictfromR34kt.py
+# tc_rmax_estimatefromR34kt.py
 
 ## Predict tropical cyclone Rmax from Vmax, R34kt, and latitude
 ### Source: Chavas D.R. and J. A.. Knaff (2022). A simple model for predicting the tropical cyclone radius of maximum wind from outer size. Wea. For., 37(5), pp.563-579
@@ -13,12 +13,11 @@ import numpy as np
 
 def predict_Rmax_from_R34kt(
     VmaxNHC_ms: float,
-    Vtrans_ms: float,
     R34ktmean_km: float,
     lat: float
 ) -> float:
     """
-    # Predict Rmax (km) from NHC point‐max wind speed (m/s), translation speed (m/s),
+    # Predict Rmax (km) from NHC point‐max wind speed (m/s),
     # R34kt mean radius (km), and latitude (deg), using CK22.
     # """
     
@@ -30,7 +29,7 @@ def predict_Rmax_from_R34kt(
     V34kt = 34 * ms_kt  # [m/s]
     M34kt = R34ktmean_m * V34kt + 0.5 * np.abs(fcor) * R34ktmean_m**2
     
-    # Define f*r8
+    # Define intermediate predictor
     halffcorR34kt_ms = 0.5 * fcor * R34ktmean_m
     
     # Estimate Mmax/M34kt (Eq 7 of CK22)

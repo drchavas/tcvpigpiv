@@ -21,6 +21,7 @@ R34ktNHCquadmax_nautmi = (135 + 150 + 145 + 150) / 4 # average NHC R34kt radius 
                                                         # this is the MAXIMUM radius of this wind speed in each quadrant;
                                                         # value is reduced by 0.85 below to estimate the mean radius
 ## Default values: VmaxNHC_kt=100 kt, R34ktNHCquadmax_nautmi= 145.0 naut mi, lat = 20 --> unadjusted Rmax=38.1 km (sanity check)
+Penv_mb = 1008      #[mb]
 
 # # Define input parameters
 # Vmaxmean_ms = 45.8           # [m/s]
@@ -49,17 +50,50 @@ R34ktmean_km = R34ktNHCquadmax_m_temp * fac_R34ktNHCquadmax2mean / 1000 #[km]
 ### Source: Chavas D.R. and J. A.. Knaff (2022). A simple model for predicting the tropical cyclone radius of maximum wind from outer size. Wea. For., 37(5), pp.563-579
 ### https://doi.org/10.1175/WAF-D-21-0103.1
 
-from tcwindprofile.Rmax_predictfromR34kt import predict_Rmax_from_R34kt
+from tcwindprofile.tc_rmax_estimatefromR34kt import predict_Rmax_from_R34kt
 
 Rmax_estimate_km, Rmax_estimate_nautmi = predict_Rmax_from_R34kt(
         Vmaxmean_ms,
-        Vtrans_ms,
         R34ktmean_km,
         lat
     )
 print(f"Estimated Rmax = {Rmax_estimate_km:.1f} km")
 # print(f"Estimated Rmax = {Rmax_estimate_nautmi:.1f} naut mi")
 ###############################################################
+
+###############################################################
+# Estimate Pmin from Vmax, R34kt, latitude, translation speed, Penv
+### Source: Chavas D.R., Knaff J.A. and P. Klotzbach  (2025). A Simple Model for Predicting Tropical Cyclone Minimum Central Pressure from Intensity and Size. Wea. For., 40(2), pp.333-346
+### https://doi.org/10.1175/WAF-D-24-0031.1
+
+from tcwindprofile.tc_pmin_estimatefromR34kt import predict_Pmin_from_R34kt
+
+Pmin_estimate_mb, dP_estimate_mb = predict_Pmin_from_R34kt(
+        Vmaxmean_ms,
+        R34ktmean_km,
+        lat,
+        Vtrans_ms,
+        Penv_mb
+    )
+print(f"Estimated Pmin = {Pmin_estimate_mb:.1f} mb")
+print(f"Estimated dP = {dP_estimate_mb:.1f} mb")
+###############################################################
+
+
+###############################################################
+# Retrieve estimated outer radius R0 ONLY
+# (If you dont need the entire wind profile)
+
+from tcwindprofile.tc_outer_radius_estimate import estimate_outer_radius
+
+V34kt_ms = 34 * ms_per_kt           # [m/s]; outermost radius to calculate profile
+R34ktmean_m = R34ktmean_km * 1000
+omeg = 7.292e-5  # Earth's rotation rate
+fcor = 2 * omeg * math.sin(math.radians(abs(lat)))  # [s^-1]
+R0 = estimate_outer_radius(R34ktmean_m=R34ktmean_m, V34kt_ms=V34kt_ms, fcor=fcor)
+print(f"Estimated R0 = {R0/1000:.1f} km")
+
+
 
 ###############################################################
 # Create wind profile
@@ -80,17 +114,3 @@ print(f"Estimated R0 = {R0_estimate_km:.1f} km")
 # No plot
 # rr_km, vv_ms, R0_km = generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat)
 # print(f"Estimated R0 = {R0_estimate_km:.1f} km")
-
-
-###############################################################
-# Retrieve estimated outer radius R0 ONLY
-# (If you dont need the entire wind profile)
-
-from tcwindprofile.tc_outer_radius_estimate import estimate_outer_radius
-
-V34kt_ms = 34 * ms_per_kt           # [m/s]; outermost radius to calculate profile
-R34ktmean_m = R34ktmean_km * 1000
-omeg = 7.292e-5  # Earth's rotation rate
-fcor = 2 * omeg * math.sin(math.radians(abs(lat)))  # [s^-1]
-R0 = estimate_outer_radius(R34ktmean_m=R34ktmean_m, V34kt_ms=V34kt_ms, fcor=fcor)
-print(f"Estimated R0 = {R0/1000:.1f} km")
