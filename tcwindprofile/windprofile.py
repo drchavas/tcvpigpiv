@@ -100,21 +100,6 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #%% STEP 1a) Very good estimate of outer edge of storm, R0mean (where v=0)
     #%% Analytic approximation of R0mean, from physical model of non-convecting wind profile (Emanuel 2004; Chavas et al. 2015 JAS)
-    # Environmental params
-    # Cd = 1.5e-3  # [-]
-    # w_cool = 2 / 1000  # [m/s]
-    # chi = 2 * Cd / w_cool
-    # Mfit = R34ktmean_m * V34kt_ms + 0.5 * fcor * R34ktmean_m**2
-    
-    # beta = 1.35
-    # c1 = 0.5 * fcor
-    # c2 = 0.5 * beta * fcor * R34ktmean_m
-    # c3 = -Mfit
-    # c4 = -R34ktmean_m * Mfit - chi * (beta * R34ktmean_m * V34kt_ms)**2
-    # coeffs = [c1, c2, c3, c4]
-    # x = np.roots(coeffs).real
-    # R0mean_candidates = x[x > 0]
-    # R0mean_dMdrcnstmod = R0mean_candidates[0]
     
     Cd = 1.5e-3  # [-]
     w_cool = 2 / 1000  # [m/s]
@@ -149,6 +134,8 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     w_cool=w_cool,
     V34kt_ms=V34kt_ms,
     )
+    
+    # Interpolate to original radius vector, chop off NaNs beyond outer edge (which will extend a bit beyond r0)
     r0_plot = np.max(rr_outer_m)
     rr_full=rr_full[rr_full<=r0_plot]
     vv_E04approx = np.interp(rr_full, rr_outer_m, vv_outer_ms)
