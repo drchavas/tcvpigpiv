@@ -11,8 +11,10 @@
 #### Physics-based non-convecting wind field profile beyond R34kt was shown to compare very well against entire QuikSCAT database -- see Fig 6 of [Chavas et al. (2015, JAS)](https://doi.org/10.1175/JAS-D-15-0014.1)
 #### Quadratic in the eye (U-shape is common)
 
+from tcwindprofile.Rmax_predictfromR34kt import Rmax_predictfromR34kt
 from tcwindprofile.tc_outer_radius_estimate import estimate_outer_radius
 from tcwindprofile.tc_outer_windprofile import outer_windprofile
+
 
 def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     
