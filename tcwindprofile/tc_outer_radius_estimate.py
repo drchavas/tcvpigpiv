@@ -1,5 +1,11 @@
 # tcwindprofile/tc_outer_radius_estimate.py
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%% Very good estimate of outer edge of storm, R0mean (where v=0)
+#%% Analytic approximation of R0mean, from physical model of non-convecting wind profile (Emanuel 2004; Chavas et al. 2015 JAS)
+
+#%% Citation forthcoming...
+
 import numpy as np
 
 def estimate_outer_radius(R34ktmean_m, V34kt_ms, fcor,

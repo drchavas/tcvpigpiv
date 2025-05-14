@@ -1,47 +1,18 @@
+# windprofile.py
+
+## Create a fast and robust radial profile of the tropical cyclone rotating wind from inputs Vmax, R34kt, Rmax, and latitude.
+
+#### This code uses a modified‐Rankine vortex between Rmax and R34kt and the E04 model beyond R34kt (and a quadratic profile inside the eye). It is very similar to the full physics-based wind profile model of Chavas et al. (2015) ([code here](http://doi.org/10.4231/CZ4P-D448)), but is simpler and much faster.
+
+#### It is designed to guarantee that the profile fits both Rmax and R34kt and will be very close to the true outer radius (R0) as estimated by the full E04 outer solution. Hence, it is very firmly grounded in the known physics of the tropical cyclone wind field while also matching the input data. It is also guaranteed to be very well‐behaved for basically any input parameter combination.
+
+#### Model basis:
+#### Modified Rankine profile between Rmax and R34kt was shown to compare very well against high-quality subset of Atlantic Best Track database -- see Fig 8 of [Klotzbach et al. (2022, JGR-A)](https://doi.org/10.1029/2022JD037030)
+#### Physics-based non-convecting wind field profile beyond R34kt was shown to compare very well against entire QuikSCAT database -- see Fig 6 of [Chavas et al. (2015, JAS)](https://doi.org/10.1175/JAS-D-15-0014.1)
+#### Quadratic in the eye (U-shape is common)
 
 from tcwindprofile.tc_outer_radius_estimate import estimate_outer_radius
 from tcwindprofile.tc_outer_windprofile import outer_windprofile
-
-# #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# #%% Function for E04 outer wind profile with R0mean input
-# #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# def E04_outerwind_r0input_nondim_MM0(r0, fcor, Cd, w_cool, Nr):
-#     """
-#     Computes nondimensional radial profile of angular momentum (M/M0) versus (r/r0).
-#     """
-    
-#     import numpy as np
-    
-#     fcor = abs(fcor)
-#     M0 = 0.5 * fcor * r0**2
-#     drfracr0 = 0.001
-#     if r0 > 2500 * 1000 or r0 < 200 * 1000:
-#         drfracr0 = drfracr0 / 10.0
-#     if Nr > 1 / drfracr0:
-#         Nr = 1 / drfracr0
-#     rfracr0_max = 1
-#     rfracr0_min = rfracr0_max - (Nr - 1) * drfracr0
-#     rrfracr0 = np.arange(rfracr0_min, rfracr0_max + drfracr0, drfracr0)
-#     MMfracM0 = np.full(rrfracr0.shape, np.nan)
-#     MMfracM0[-1] = 1
-#     rfracr0_temp = rrfracr0[-2]  # one step inwards from r0
-#     MfracM0_temp = MMfracM0[-1]
-#     MMfracM0[-2] = MfracM0_temp
-
-#     # Piecewise linear fit parameters from Donelan2004_fit.m
-#     Cd_lowV = 6.2e-4
-#     V_thresh1 = 6
-#     V_thresh2 = 35.4
-#     Cd_highV = 2.35e-3
-#     linear_slope = (Cd_highV - Cd_lowV) / (V_thresh2 - V_thresh1)
-
-#     for ii in range(int(Nr) - 2):
-#         gam = Cd * fcor * r0 / w_cool
-#         dMfracM0_drfracr0_temp = gam * ((MfracM0_temp - rfracr0_temp**2)**2) / (1 - rfracr0_temp**2)
-#         MfracM0_temp = MfracM0_temp - dMfracM0_drfracr0_temp * drfracr0
-#         rfracr0_temp = rfracr0_temp - drfracr0
-#         MMfracM0[-ii - 2 - 1] = MfracM0_temp
-#     return rrfracr0, MMfracM0
 
 def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     
@@ -77,9 +48,9 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     ### CALCULATE WIND PROFILE
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    print("This code uses a modified‐Rankine vortex between Rmax and R34ktmean_m (default R34kt) and the E04 model beyond R34ktmean_m (and a quadratic profile inside the eye).")
-    print("It is designed to guarantee that the profile fits both Rmax and R34kt and will be very close to the true outer radius (R0) as estimated by the full E04 outer solution.")
-    print("It is also guaranteed to be very well‐behaved for basically any input parameter combination.")
+    # print("This code uses a modified‐Rankine vortex between Rmax and R34ktmean_m (default R34kt) and the E04 model beyond R34ktmean_m (and a quadratic profile inside the eye).")
+    # print("It is designed to guarantee that the profile fits both Rmax and R34kt and will be very close to the true outer radius (R0) as estimated by the full E04 outer solution.")
+    # print("It is also guaranteed to be very well‐behaved for basically any input parameter combination.")
     
     #%% Calculate some params
     ms_kt = 0.5144444             # 1 kt = 0.514444 m/s
@@ -202,13 +173,15 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
         
         plt.savefig('Operational_demo_vmaxR34ktRmax_to_windprofile.jpg', format='jpeg')
         plt.show()
+        print("Made plot of wind profile!")
         
     # Return radius [km], wind speed [m/s], and R0mean [km]
     # Interpolate to 1 km resolution
     rr_km = rr_full / 1000
     rr_km_interp = np.arange(0, rr_km.max(), 0.1)  # 0.1 km resolution
-    vv_mps_interp = np.interp(rr_km_interp, rr_km, vv_MR_E04_R34ktmean)
-    return rr_km_interp, vv_mps_interp, R0mean_dMdrcnstmod / 1000
+    vv_ms_interp = np.interp(rr_km_interp, rr_km, vv_MR_E04_R34ktmean)
+    print("Returning radius vector [km], wind speed vector [m/s], estimated outer radius [km]")
+    return rr_km_interp, vv_ms_interp, R0mean_dMdrcnstmod / 1000
 
 
     

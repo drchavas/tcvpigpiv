@@ -1,5 +1,14 @@
 # tcwindprofile/tc_outer_windprofile.py
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%% Wind profile from R0mean --> R34kt
+#%% Exact solution to model of non-convecting wind profile (Emanuel 2004; Chavas et al. 2015 JAS)
+#%% Notes:
+#%% - It is a single integration inwards from R0. *Cannot* integrate out
+#%%   from R34kt, it may blow up (math is weird)
+#%% - Could do a simpler approximate profile instead, but this solution is
+#%%   just as fast doing some sort of curve fit, so might as well use exact
+
 import numpy as np
 
 def E04_outerwind_r0input_nondim_MM0(r0, fcor, Cd, w_cool, Nr):
