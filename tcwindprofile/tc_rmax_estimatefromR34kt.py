@@ -72,4 +72,4 @@ def predict_Rmax_from_R34kt(
     else:
       print('Rmax estimation from R34kt: no final bias adjustment (only done for Rmax>60km)')
 
-    return Rmax_predict_km, Rmax_predict_nautmi
+    return Rmax_predict_km

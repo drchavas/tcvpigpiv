@@ -20,8 +20,9 @@ lat = 20  # [degN]; default 20N; storm-center latitude;
 R34ktNHCquadmax_nautmi = (135 + 150 + 145 + 150) / 4 # average NHC R34kt radius (here 4 quadrants)
                                                         # this is the MAXIMUM radius of this wind speed in each quadrant;
                                                         # value is reduced by 0.85 below to estimate the mean radius
-## Default values: VmaxNHC_kt=100 kt, R34ktNHCquadmax_nautmi= 145.0 naut mi, lat = 20 --> unadjusted Rmax=38.1 km (sanity check)
 Penv_mb = 1008      #[mb]
+## Default values: VmaxNHC_kt=100 kt, R34ktNHCquadmax_nautmi= 145.0 naut mi, lat = 20 --> unadjusted Rmax=38.1 km (sanity check)
+
 
 # # Define input parameters
 # Vmaxmean_ms = 45.8           # [m/s]
@@ -35,13 +36,15 @@ Penv_mb = 1008      #[mb]
 # Unit conversions to MKS
 ms_per_kt = 0.5144444   # 1 kt = 0.514444 m/s
 km_nautmi = 1.852
-Vmaxmean_ms = ms_per_kt * VmaxNHC_kt                      #[m/s]
-Vtrans_ms = ms_per_kt * Vtrans_kt                  #[m/s]
+VmaxNHC_ms = VmaxNHC_kt * ms_per_kt
+Vtrans_ms = Vtrans_kt * ms_per_kt
 R34ktNHCquadmax_m_temp = km_nautmi * R34ktNHCquadmax_nautmi * 1000 #[m]
 
 # Additional conversions
 fac_R34ktNHCquadmax2mean = 0.85  #Eq 1 of CKK25 -- simple estimate of mean R34kt radius from NHC R34kt (which is maximum radius of 34kt); factor originally from DeMaria et al. (2009)
 R34ktmean_km = R34ktNHCquadmax_m_temp * fac_R34ktNHCquadmax2mean / 1000 #[km]
+
+Vmaxmean_ms = VmaxNHC_ms - 0.55 * Vtrans_ms
 ###############################################################
 
 
@@ -52,10 +55,10 @@ R34ktmean_km = R34ktNHCquadmax_m_temp * fac_R34ktNHCquadmax2mean / 1000 #[km]
 
 from tcwindprofile.tc_rmax_estimatefromR34kt import predict_Rmax_from_R34kt
 
-Rmax_estimate_km, Rmax_estimate_nautmi = predict_Rmax_from_R34kt(
-        Vmaxmean_ms,
-        R34ktmean_km,
-        lat
+Rmax_estimate_km = predict_Rmax_from_R34kt(
+        VmaxNHC_ms=VmaxNHC_ms,
+        R34ktmean_km=R34ktmean_km,
+        lat=lat
     )
 print(f"Estimated Rmax = {Rmax_estimate_km:.1f} km")
 # print(f"Estimated Rmax = {Rmax_estimate_nautmi:.1f} naut mi")
@@ -69,11 +72,11 @@ print(f"Estimated Rmax = {Rmax_estimate_km:.1f} km")
 from tcwindprofile.tc_pmin_estimatefromR34kt import predict_Pmin_from_R34kt
 
 Pmin_estimate_mb, dP_estimate_mb = predict_Pmin_from_R34kt(
-        Vmaxmean_ms,
-        R34ktmean_km,
-        lat,
-        Vtrans_ms,
-        Penv_mb
+        VmaxNHC_ms=VmaxNHC_ms,
+        R34ktmean_km=R34ktmean_km,
+        lat=lat,
+        Vtrans_ms=Vtrans_ms,
+        Penv_mb=Penv_mb
     )
 print(f"Estimated Pmin = {Pmin_estimate_mb:.1f} mb")
 print(f"Estimated dP = {dP_estimate_mb:.1f} mb")
@@ -109,7 +112,13 @@ from tcwindprofile import generate_wind_profile
 
 Rmax_km = Rmax_estimate_km
 # Rmax_km = 38.1
-rr_km, vv_ms, R0_estimate_km = generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=True)
+rr_km, vv_ms, R0_estimate_km = generate_wind_profile(
+    Vmaxmean_ms=Vmaxmean_ms,
+    Rmax_km=Rmax_km,
+    R34ktmean_km=R34ktmean_km,
+    lat=lat,
+    plot=True
+)
 print(f"Estimated R0 = {R0_estimate_km:.1f} km")
 # No plot
 # rr_km, vv_ms, R0_km = generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat)
