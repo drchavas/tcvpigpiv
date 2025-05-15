@@ -125,6 +125,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     vv_outsideRmax = np.full(rr_full.shape, np.nan)
     rr_outer_mask = rr_full > Rmax_m
     vv_outsideRmax[rr_outer_mask] = Vmaxmean_ms * (rr_full[rr_outer_mask] / Rmax_m)**alp_outer
+    
     alp_eye = 2  # quadratic profile in eye
     vv_eye = Vmaxmean_ms * (rr_full / Rmax_m)**alp_eye
     vv_MR = np.concatenate((vv_eye[rr_full <= Rmax_m], vv_outsideRmax[rr_full > Rmax_m]))
@@ -141,8 +142,11 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     rr_beyondR34ktmean = rr_full[ii_temp]
     vv_MR_beyondR34ktmean = vv_MR[ii_temp]
     vv_E04approx_beyondR34ktmean = vv_E04approx[ii_temp]
-    v_adj = -(vv_E04approx_beyondR34ktmean - vv_MR_beyondR34ktmean) * np.exp(-(rr_beyondR34ktmean - R34ktmean_m) / R34ktmean_m)
-    v_adj[rr_beyondR34ktmean>(R0_km*1000)] = 0      #ensure that adjustment does not go beyond outer edge of storm
+    R_outeredgeofadj = R34ktmean_m + (R0_km*1000 - R34ktmean_m)* (1 / 2)   #1/2 of the distance from R34kt to R0
+    adj_width = R_outeredgeofadj - R34ktmean_m
+    v_adj = -(vv_E04approx_beyondR34ktmean - vv_MR_beyondR34ktmean) * np.exp(-(rr_beyondR34ktmean - R34ktmean_m) / adj_width) * ((R_outeredgeofadj - rr_beyondR34ktmean) / adj_width)**2
+    v_adj[rr_beyondR34ktmean>R_outeredgeofadj] = 0
+    # v_adj[rr_beyondR34ktmean>(R0_km*1000)] = 0      #ensure that adjustment does not go beyond outer edge of storm
     vv_E04approx_adj = vv_E04approx_beyondR34ktmean + v_adj
     vv_MR_E04_R34ktmean = np.concatenate((vv_MR[rr_full <= R34ktmean_m], vv_E04approx_adj))
     
@@ -160,7 +164,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
         # Figure dimensions: original 30 cm x 30 cm, now half: 15 cm x 15 cm (converted to inches)
         fig, ax = plt.subplots(figsize=(15/2.54, 15/2.54))
         ax.plot(rr_km_interp, vv_ms_interp, 'm-', linewidth=3)
-        ax.plot(rr_full / 1000, vv_MR_E04_R34ktmean_nosmooth, 'g:', linewidth=3)
+        # ax.plot(rr_full / 1000, vv_MR_E04_R34ktmean_nosmooth, 'g:', linewidth=3)   #compare no smooth vs. smoothed
         ax.plot(Rmax_m / 1000, Vmaxmean_ms, 'k.', markersize=20)
         ax.plot(R34ktmean_m / 1000, V34kt_ms, 'k.', markersize=20)
         ax.plot(R0_km, 0, 'm.', markersize=20)

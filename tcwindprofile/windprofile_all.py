@@ -44,6 +44,11 @@ def run_full_wind_model(
     Vtrans_ms = Vtrans_kt * ms_per_kt
     Vmaxmean_ms = VmaxNHC_ms - 0.55 * Vtrans_ms
     R34ktmean_km = 0.85 * R34kt_quad_max_nautmi * km_per_nautmi
+    
+    V34kt_ms = 17.49
+    
+    if Vmaxmean_ms < V34kt_ms:
+        raise ValueError("Vmaxmean_ms cannot be < 34 kt")
 
     ###########################
     # 1) Estimate Rmax (CK22)
