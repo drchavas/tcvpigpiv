@@ -56,7 +56,7 @@ def run_full_wind_model(
     )
 
     ###########################
-    # 2) Estimate wind profile + R0 (CK22 + Emanuel04)
+    # 2) Estimate wind profile + R0 (Approximation to CLE15 model)
     # print(Vmaxmean_ms,Rmax_km,R34ktmean_km,lat,plot)
     from tcwindprofile.windprofile import generate_wind_profile
     # from tcwindprofile.tc_outer_radius_estimate import estimate_outer_radius
@@ -69,6 +69,7 @@ def run_full_wind_model(
         lat=lat,
         plot=plot
     )
+    print(R0_km)
 
     ###########################
     # 3) Estimate Pmin (CKK25)
@@ -101,8 +102,8 @@ def run_full_wind_model(
     return {
         "rr_km": rr_km,
         "vv_ms": vv_ms,
-        "pp_mb": pp_mb,
         "R0_km": R0_km,
+        "pp_mb": pp_mb,
         "Rmax_km": Rmax_km,
-        "Pmin_mb": Pmin_estimate_mb
+        "Pmin_mb": Pmin_estimate_mb,
     }

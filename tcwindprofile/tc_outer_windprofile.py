@@ -64,7 +64,7 @@ def outer_windprofile(r0_m, fcor, Cd, w_cool, V34kt_ms):
     rr_m = np.arange(0, r0_plot + dr, dr)  # [m]
     # Interpolate approx-E04 solution to original radius vector
     vv_outer_ms = np.interp(rr_m, rr_E04approx, vv_E04approx)
-    
+
     # # 2) build velocity
     # M0 = 0.5 * fcor * r0_m**2
     # rr_E04 = rrfracr0 * r0_m

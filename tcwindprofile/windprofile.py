@@ -84,7 +84,9 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     w_cool=w_cool,
     beta=beta
     )
-
+    
+    R0_km = R0mean_dMdrcnstmod / 1000
+    
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,7 +134,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     #%% Simple exponential smoother of (inner-outer) moving outwards from R34kt
     
     # No smoothing: direct merge at R34ktmean_m -- will *not* match dV/dr without smoothing
-    # vv_MR_E04_R34ktmean_nosmooth = np.concatenate((vv_MR[rr_full <= R34ktmean_m], vv_E04approx[rr_full > R34ktmean_m]))
+    vv_MR_E04_R34ktmean_nosmooth = np.concatenate((vv_MR[rr_full <= R34ktmean_m], vv_E04approx[rr_full > R34ktmean_m]))
     
     # Match dV/dr at R34kt: exponential smoother of (inner-outer) moving outwards from R34kt
     ii_temp = rr_full > R34ktmean_m
@@ -140,20 +142,28 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     vv_MR_beyondR34ktmean = vv_MR[ii_temp]
     vv_E04approx_beyondR34ktmean = vv_E04approx[ii_temp]
     v_adj = -(vv_E04approx_beyondR34ktmean - vv_MR_beyondR34ktmean) * np.exp(-(rr_beyondR34ktmean - R34ktmean_m) / R34ktmean_m)
+    v_adj[rr_beyondR34ktmean>(R0_km*1000)] = 0      #ensure that adjustment does not go beyond outer edge of storm
     vv_E04approx_adj = vv_E04approx_beyondR34ktmean + v_adj
     vv_MR_E04_R34ktmean = np.concatenate((vv_MR[rr_full <= R34ktmean_m], vv_E04approx_adj))
     
+    # Interpolate to 1 km resolution
+    rr_km = rr_full / 1000
+    rr_km_interp = np.arange(0, rr_km.max(), 0.1)  # 0.1 km resolution
+    vv_ms_interp = np.interp(rr_km_interp, rr_km, vv_MR_E04_R34ktmean)
+
+
+
     if plot:
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         #%% Make plot
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         # Figure dimensions: original 30 cm x 30 cm, now half: 15 cm x 15 cm (converted to inches)
         fig, ax = plt.subplots(figsize=(15/2.54, 15/2.54))
-        ax.plot(rr_full / 1000, vv_MR_E04_R34ktmean, 'm-', linewidth=3)
-        # ax.plot(rr_full / 1000, vv_MR_E04_R34ktmean_nosmooth, 'g:', linewidth=3)
+        ax.plot(rr_km_interp, vv_ms_interp, 'm-', linewidth=3)
+        ax.plot(rr_full / 1000, vv_MR_E04_R34ktmean_nosmooth, 'g:', linewidth=3)
         ax.plot(Rmax_m / 1000, Vmaxmean_ms, 'k.', markersize=20)
         ax.plot(R34ktmean_m / 1000, V34kt_ms, 'k.', markersize=20)
-        ax.plot(R0mean_dMdrcnstmod / 1000, 0, 'm*', markersize=20)
+        ax.plot(R0_km, 0, 'm.', markersize=20)
         ax.set_xlabel('radius [km]')
         ax.set_ylabel('azimuthal wind speed [m/s]')
         ax.axis([0, 1.1 * R0mean_dMdrcnstmod / 1000, 0, 1.1 * Vmaxmean_ms])
@@ -175,14 +185,10 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
         plt.savefig('windprofile.jpg', format='jpeg')
         plt.show()
         print("Made plot of wind profile!")
-        
-    # Return radius [km], wind speed [m/s], and R0mean [km]
-    # Interpolate to 1 km resolution
-    rr_km = rr_full / 1000
-    rr_km_interp = np.arange(0, rr_km.max(), 0.1)  # 0.1 km resolution
-    vv_ms_interp = np.interp(rr_km_interp, rr_km, vv_MR_E04_R34ktmean)
-    print("Returning radius vector [km], wind speed vector [m/s], estimated outer radius [km]")
-    return rr_km_interp, vv_ms_interp, R0mean_dMdrcnstmod / 1000
+               
+    # Return radius [km], wind speed [m/s], true R0 [km], estimated R0 [km]
+    print("Returning radius vector [km], wind speed vector [m/s], true outer radius [km], estimated outer radius [km]")
+    return rr_km_interp, vv_ms_interp, R0_km
 
 
     
