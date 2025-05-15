@@ -11,7 +11,6 @@
 #### Physics-based non-convecting wind field profile beyond R34kt was shown to compare very well against entire QuikSCAT database -- see Fig 6 of [Chavas et al. (2015, JAS)](https://doi.org/10.1175/JAS-D-15-0014.1)
 #### Quadratic in the eye (U-shape is common)
 
-from tcwindprofile.tc_rmax_estimatefromR34kt import predict_Rmax_from_R34kt
 from tcwindprofile.tc_outer_radius_estimate import estimate_outer_radius
 from tcwindprofile.tc_outer_windprofile import outer_windprofile
 
@@ -159,7 +158,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
         ax.set_ylabel('azimuthal wind speed [m/s]')
         ax.axis([0, 1.1 * R0mean_dMdrcnstmod / 1000, 0, 1.1 * Vmaxmean_ms])
         # ax.axis([0, 600, 0, 1.1 * Vmaxmean_ms])
-        ax.set_title('Complete wind profile (ModRank inner + E04approx outer)', fontsize=12)
+        ax.set_title('Complete wind profile', fontsize=12)
         
         # Annotate the top right corner with "Inputs:" and the values of Vmaxmean_ms, Rmax_m, (R34ktmean_m, V34kt_ms), and lat
         annotation = (f"Inputs:\n"
@@ -173,7 +172,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
         ax.text(0.95, 0.95, annotation, transform=ax.transAxes, ha='right', va='top',
                 fontsize=10, bbox=dict(facecolor='white', edgecolor='none', alpha=0.7))
         
-        plt.savefig('Operational_demo_vmaxR34ktRmax_to_windprofile.jpg', format='jpeg')
+        plt.savefig('windprofile.jpg', format='jpeg')
         plt.show()
         print("Made plot of wind profile!")
         

@@ -13,12 +13,6 @@
 
 # tcwindprofile/full_profile.py
 
-from tcwindprofile.tc_rmax_estimatefromR34kt import predict_Rmax_from_R34kt
-from tcwindprofile.tc_outer_radius_estimate import estimate_outer_radius
-from tcwindprofile.tc_outer_windprofile import outer_windprofile
-from tcwindprofile.windprofile import generate_wind_profile
-from tcwindprofile.tc_pmin_estimatefromR34kt import predict_Pmin_from_R34kt
-
 def run_full_wind_model(
     VmaxNHC_kt: float,
     Vtrans_kt: float,
@@ -51,15 +45,23 @@ def run_full_wind_model(
     Vmaxmean_ms = VmaxNHC_ms - 0.55 * Vtrans_ms
     R34ktmean_km = 0.85 * R34kt_quad_max_nautmi * km_per_nautmi
 
+    ###########################
     # 1) Estimate Rmax (CK22)
+    from tcwindprofile.tc_rmax_estimatefromR34kt import predict_Rmax_from_R34kt
+    
     Rmax_km = predict_Rmax_from_R34kt(
         VmaxNHC_ms=VmaxNHC_ms,
         R34ktmean_km=R34ktmean_km,
         lat=lat
     )
 
+    ###########################
     # 2) Estimate wind profile + R0 (CK22 + Emanuel04)
     # print(Vmaxmean_ms,Rmax_km,R34ktmean_km,lat,plot)
+    from tcwindprofile.windprofile import generate_wind_profile
+    # from tcwindprofile.tc_outer_radius_estimate import estimate_outer_radius
+    # from tcwindprofile.tc_outer_windprofile import outer_windprofile
+    
     rr_km, vv_ms, R0_km = generate_wind_profile(
         Vmaxmean_ms=Vmaxmean_ms,
         Rmax_km=Rmax_km,
@@ -68,8 +70,11 @@ def run_full_wind_model(
         plot=plot
     )
 
+    ###########################
     # 3) Estimate Pmin (CKK25)
     # print(VmaxNHC_ms,R34ktmean_km,lat,Vtrans_ms,Penv_mb)
+    from tcwindprofile.tc_pmin_estimatefromR34kt import predict_Pmin_from_R34kt
+    
     Pmin_estimate_mb, dP_estimate_mb = predict_Pmin_from_R34kt(
         VmaxNHC_ms=VmaxNHC_ms,
         R34ktmean_km=R34ktmean_km,
@@ -78,9 +83,25 @@ def run_full_wind_model(
         Penv_mb=Penv_mb
     )
 
+    ###########################
+    # 4) Calculate pressure profile from wind field and matches Pmin
+    from tcwindprofile.pressure_profile import pressure_profile_calcfromwindprofile                        # [deg]
+    
+    pp_mb = pressure_profile_calcfromwindprofile(
+        rr_km=rr_km,
+        vv_ms=vv_ms,
+        Renv_km=R0_km,
+        Penv_mb=Penv_mb,
+        Pmin_mb=Pmin_estimate_mb,
+        lat=lat,
+        plot=plot)
+    
+    ###########################
+    # 5) Return final results
     return {
         "rr_km": rr_km,
         "vv_ms": vv_ms,
+        "pp_mb": pp_mb,
         "R0_km": R0_km,
         "Rmax_km": Rmax_km,
         "Pmin_mb": Pmin_estimate_mb

@@ -28,7 +28,7 @@ Penv_mb = 1008      #[mb]
 
 from tcwindprofile.windprofile_all import run_full_wind_model
 
-result = run_full_wind_model(
+tc_wind_and_pressure_profile = run_full_wind_model(
     VmaxNHC_kt=100,
     Vtrans_kt=20,
     R34kt_quad_max_nautmi=145,
@@ -37,6 +37,6 @@ result = run_full_wind_model(
     plot=True
 )
 
-print(f"Rmax = {result['Rmax_km']:.1f} km")
-print(f"R0 = {result['R0_km']:.1f} km")
-print(f"Pmin = {result['Pmin_mb']:.1f} hPa")
+print(f"Rmax = {tc_wind_and_pressure_profile['Rmax_km']:.1f} km")
+print(f"R0 = {tc_wind_and_pressure_profile['R0_km']:.1f} km")
+print(f"Pmin = {tc_wind_and_pressure_profile['Pmin_mb']:.1f} hPa")
