@@ -22,20 +22,12 @@ def run_full_wind_model(
     plot: bool = False
 ):
     """
-    Full TC wind profile modeling pipeline:
+    Full modeling pipeline:
     - Estimate Rmax from R34kt using CK22
-    - Estimate R0 using Chavas et al. (2015)
-    - Generate wind profile
+    - Estimate R0 using approximate version of Emanuel 2004 / Chavas et al. 2015/2016
+    - Generate wind profile: merge simple inner + outer models
     - Predict Pmin using CKK25
-
-    Returns
-    -------
-    dict with:
-      - rr_km: radius array [km]
-      - vv_ms: wind profile [m/s]
-      - R0_km: estimated outer radius [km]
-      - Rmax_km: estimated Rmax [km]
-      - Pmin_hPa: estimated minimum pressure [hPa]
+    - Generate pressure profile that matches Pmin
     """
     # Convert input units
     ms_per_kt = 0.5144444
@@ -75,7 +67,6 @@ def run_full_wind_model(
         # plot=True
         plot=False
     )
-    print(R0_km)
 
     ###########################
     # 3) Estimate Pmin (CKK25)

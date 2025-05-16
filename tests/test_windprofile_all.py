@@ -25,7 +25,16 @@ Penv_mb = 1008      #[mb]
 ############################################################
 
 
-
+################################################################
+## Calculate wind and pressure profiles and associated data
+"""
+Full modeling pipeline:
+- Estimate Rmax from R34kt using CK22
+- Estimate R0 using approximate version of Emanuel 2004 / Chavas et al. 2015/2016
+- Generate wind profile: merge simple inner + outer models
+- Predict Pmin using CKK25
+- Generate pressure profile that matches Pmin
+"""
 from tcwindprofile.windprofile_all import run_full_wind_model
 
 tc_wind_and_pressure_profile = run_full_wind_model(
@@ -38,9 +47,12 @@ tc_wind_and_pressure_profile = run_full_wind_model(
 )
 
 print(f"Rmax = {tc_wind_and_pressure_profile['Rmax_km']:.1f} km")
-print(f"Pmin = {tc_wind_and_pressure_profile['Pmin_mb']:.1f} hPa")
 print(f"R0 = {tc_wind_and_pressure_profile['R0_km']:.1f} km")
+print(f"Pmin = {tc_wind_and_pressure_profile['Pmin_mb']:.1f} hPa")
+################################################################
 
+################################################################
+## Plot that data
 from tcwindprofile.plot_windprofile import plot_wind_and_pressure
 
 # unpack
@@ -68,3 +80,4 @@ plot_wind_and_pressure(
     Renv_km, Penv_mb, Pmin_mb,
     save_path='tc_wind_pressure_profiles'
 )
+################################################################

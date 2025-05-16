@@ -47,4 +47,5 @@ def predict_Pmin_from_R34kt(
     # print("dP_predict_mb =", dP_predict_mb,' mb')
     # print("Pmin_predict_mb =", Pmin_predict_mb,' mb (Penv =', Penv_mb,' mb)')
 
+    print("Returning minimum central sea-level pressure [mb]")
     return Pmin_predict_mb, dP_predict_mb

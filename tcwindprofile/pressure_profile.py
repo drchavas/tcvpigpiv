@@ -87,7 +87,7 @@ def pressure_profile_calcfromwindprofile(
     # Rescale pressure deficit by constant to match input dP
     dP_center_mb = Penv_mb - Pmin_mb  #dP defined POSITIVE
     dP_center_prof_mb = np.nanmax(dP_mb)  #dP defined POSITIVE
-    print(dP_center_prof_mb)
+    # print(dP_center_prof_mb)
     dP_mb = dP_mb*(dP_center_mb/dP_center_prof_mb)
     
     # Compute full pressure profile
@@ -123,4 +123,5 @@ def pressure_profile_calcfromwindprofile(
         print("Made plot of pressure profile from input wind profile!")
 
     # Return pressure profile
+    print("Returning sea-level pressure vector [mb] along input radius vector [km]")
     return pp_mb

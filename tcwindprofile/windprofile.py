@@ -196,7 +196,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
         print("Made plot of wind profile!")
                
     # Return radius [km], wind speed [m/s], true R0 [km], estimated R0 [km]
-    print("Returning radius vector [km], wind speed vector [m/s], true outer radius [km], estimated outer radius [km]")
+    print("Returning radius vector [km], wind speed vector [m/s], estimated outer radius [km]")
     return rr_km_interp, vv_ms_interp, R0_km
 
 
