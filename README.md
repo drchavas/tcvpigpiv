@@ -1,6 +1,6 @@
 # TCWindProfile
 
-A package that creates a fast and robust radial profiles of the tropical cyclone rotating wind and pressure from inputs Vmax, R34kt, Rmax, and latitude.
+A package that creates fast and robust radial profiles of the tropical cyclone rotating wind and pressure from inputs Vmax, R34kt, and latitude.
 
 Full modeling pipeline:
 - Estimate Rmax from R34kt: ref Chavas and Knaff 2022 WAF)
