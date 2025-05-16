@@ -23,11 +23,11 @@ def run_full_wind_model(
 ):
     """
     Full modeling pipeline:
-    - Estimate Rmax from R34kt using CK22
-    - Estimate R0 using approximate version of Emanuel 2004 / Chavas et al. 2015/2016
-    - Generate wind profile: merge simple inner + outer models
-    - Predict Pmin using CKK25
-    - Generate pressure profile that matches Pmin
+    - Estimate Rmax from R34kt: ref Chavas and Knaff 2022 WAF)
+    - Estimate R0 from R34kt: approximate version of outer model ref Emanuel 2004 / Chavas et al. 2015 JAS / Chavas and Lin 2016 JAS
+    - Generate wind profile: merge simple inner + outer models, ref Klotzbach et al. 2022 JGR-A / Chavas and Lin 2016 JAS
+    - Estimate Pmin: ref Chavas Knaff Klotzbach 2025 WAF
+    - Generate pressure profile that matches Pmin: ref Chavas Knaff Klotzbach 2025 WAF
     """
     # Convert input units
     ms_per_kt = 0.5144444
