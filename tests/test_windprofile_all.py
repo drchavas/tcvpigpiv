@@ -14,7 +14,7 @@ import math
 
 ############################################################
 # NHC/Best Track Operational Inputs
-VmaxNHC_kt = 100  # [kt]; NHC intensity (point-max wind speed)
+VmaxNHC_kt = 60  # [kt]; NHC intensity (point-max wind speed)
 Vtrans_kt = 20    # [kt]
 lat = 20  # [degN]; default 20N; storm-center latitude;
 R34ktNHCquadmax_nautmi = (135 + 150 + 145 + 150) / 4 # average NHC R34kt radius (here 4 quadrants)
