@@ -42,7 +42,7 @@ def run_full_wind_model(
     km_per_nautmi = 1.852
     VmaxNHC_ms = VmaxNHC_kt * ms_per_kt
     Vtrans_ms = Vtrans_kt * ms_per_kt
-    Vmaxmean_ms = VmaxNHC_ms - 0.55 * Vtrans_ms
+    Vmaxmean_ms = VmaxNHC_ms - 0.55 * Vtrans_ms  #Lin and Chavas (2012), Chavas Knaff Klotzbach (2025)
     R34ktmean_km = 0.85 * R34kt_quad_max_nautmi * km_per_nautmi
     
     V34kt_ms = 17.49
@@ -72,7 +72,8 @@ def run_full_wind_model(
         Rmax_km=Rmax_km,
         R34ktmean_km=R34ktmean_km,
         lat=lat,
-        plot=plot
+        # plot=True
+        plot=False
     )
     print(R0_km)
 
@@ -100,15 +101,20 @@ def run_full_wind_model(
         Penv_mb=Penv_mb,
         Pmin_mb=Pmin_estimate_mb,
         lat=lat,
-        plot=plot)
+        plot=False)
     
     ###########################
     # 5) Return final results
     return {
         "rr_km": rr_km,
         "vv_ms": vv_ms,
-        "R0_km": R0_km,
         "pp_mb": pp_mb,
+        "Vmaxmean_ms": Vmaxmean_ms,
         "Rmax_km": Rmax_km,
+        "V34kt_ms": V34kt_ms,
+        "R34ktmean_km": R34ktmean_km,
+        "R0_km": R0_km,
+        "lat": lat,
+        "Penv_mb": Penv_mb,
         "Pmin_mb": Pmin_estimate_mb,
     }

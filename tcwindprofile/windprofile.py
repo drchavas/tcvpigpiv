@@ -144,17 +144,15 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     vv_E04approx_beyondR34ktmean = vv_E04approx[ii_temp]
     R_transitionouteredge = R34ktmean_m + (R0_km*1000 - R34ktmean_m)* (1 / 2)   #1/2 of the distance from R34kt to R0
     def taper_cubic(r, Rin, Rout):
-        """1 at Rin, 0 at Rout, smooth cubic Hermite."""
+        """1 at Rin, 0 at Rout, derivative continuous at both, smooth cubic Hermite."""
         s = (r - Rin) / (Rout - Rin)
         s = np.clip(s, 0, 1)
         return 1 - (3*s*s - 2*s*s*s)
+        #note: tried many other more complex options, but they only create additional "knees" in the curve that make things worse
+        #tried: quintic (not better), cosine (nearly identical), cubic with s^p p<1 (sharper transition but now derivative may be discontinuous at Rin), beta with sharpness param (maintains derivative continuity, but is just bumpier)
     w = taper_cubic(rr_beyondR34ktmean, R34ktmean_m, R_transitionouteredge)
-    vv_E04approx_adj = vv_MR_beyondR34ktmean * w + vv_E04approx_beyondR34ktmean * (1 - w)
 
-    # v_adj = -(vv_E04approx_beyondR34ktmean - vv_MR_beyondR34ktmean) * np.exp(-(rr_beyondR34ktmean - R34ktmean_m) / (R_transitionouteredge - R34ktmean_m)) * ((R_outeredgeofadj - rr_beyondR34ktmean) / (R_transitionouteredge - R34ktmean_m))**2
-    # v_adj[rr_beyondR34ktmean>R_outeredgeofadj] = 0
-    # v_adj[rr_beyondR34ktmean>(R0_km*1000)] = 0      #ensure that adjustment does not go beyond outer edge of storm
-    # vv_E04approx_adj = vv_E04approx_beyondR34ktmean + v_adj
+    vv_E04approx_adj = vv_MR_beyondR34ktmean * w + vv_E04approx_beyondR34ktmean * (1 - w)
     vv_MR_E04_R34ktmean = np.concatenate((vv_MR[rr_full <= R34ktmean_m], vv_E04approx_adj))
     
     # Interpolate to 1 km resolution

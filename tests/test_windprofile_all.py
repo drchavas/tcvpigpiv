@@ -14,7 +14,7 @@ import math
 
 ############################################################
 # NHC/Best Track Operational Inputs
-VmaxNHC_kt = 60  # [kt]; NHC intensity (point-max wind speed)
+VmaxNHC_kt = 100  # [kt]; NHC intensity (point-max wind speed)
 Vtrans_kt = 20    # [kt]
 lat = 20  # [degN]; default 20N; storm-center latitude;
 R34ktNHCquadmax_nautmi = (135 + 150 + 145 + 150) / 4 # average NHC R34kt radius (here 4 quadrants)
@@ -40,3 +40,31 @@ tc_wind_and_pressure_profile = run_full_wind_model(
 print(f"Rmax = {tc_wind_and_pressure_profile['Rmax_km']:.1f} km")
 print(f"Pmin = {tc_wind_and_pressure_profile['Pmin_mb']:.1f} hPa")
 print(f"R0 = {tc_wind_and_pressure_profile['R0_km']:.1f} km")
+
+from tcwindprofile.plot_windprofile import plot_wind_and_pressure
+
+# unpack
+rr_km   = tc_wind_and_pressure_profile['rr_km']
+vv_ms   = tc_wind_and_pressure_profile['vv_ms']
+pp_mb   = tc_wind_and_pressure_profile['pp_mb']
+Vmaxmean_ms   = tc_wind_and_pressure_profile['Vmaxmean_ms']
+Rmax_km   = tc_wind_and_pressure_profile['Rmax_km']
+V34kt_ms   = tc_wind_and_pressure_profile['V34kt_ms']
+R34ktmean_km   = tc_wind_and_pressure_profile['R34ktmean_km']
+R0_km   = tc_wind_and_pressure_profile['R0_km']
+lat   = tc_wind_and_pressure_profile['lat']
+Penv_mb   = tc_wind_and_pressure_profile['Penv_mb']
+Pmin_mb   = tc_wind_and_pressure_profile['Pmin_mb']
+
+
+# then:
+Renv_km = R0_km
+plot_wind_and_pressure(
+    rr_km, vv_ms,
+    Rmax_km, Vmaxmean_ms,
+    R34ktmean_km, V34kt_ms,
+    R0_km, lat,
+    rr_km, pp_mb,
+    Renv_km, Penv_mb, Pmin_mb,
+    save_path='tc_wind_pressure_profiles'
+)
