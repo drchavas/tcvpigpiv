@@ -102,9 +102,14 @@ def plot_wind_and_pressure(
     ax2.set_ylabel('sea-level pressure [mb]')
     ax2.set_title('Pressure profile', fontsize=12)
 
-    ann2 = f"Pmin = {Pmin_mb:.1f} mb\nPenv = {Penv_mb:.1f} mb"
+    ann2 = (
+        f"Inputs:\n"
+        f"Penv = {Penv_mb:.1f} mb\n"
+        f"Output:\n"
+        f"Pmin = {Pmin_mb:.1f} mb\n"
+    )
     ax2.text(
-        0.1, 0.2, ann2,
+        0.2, 0.4, ann2,
         transform=ax2.transAxes,
         ha='left', va='top',
         fontsize=10,
