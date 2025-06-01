@@ -77,10 +77,10 @@ def plot_wind_and_pressure(
     ann1 = (
         f"Inputs:\n"
         f"Vmax_mean = {Vmaxmean_ms:.1f} m/s\n"
-        f"Rmax = {Rmax_km:.1f} km\n"
         f"R34kt_mean = {R34kt_km:.1f} km\n"
         f"lat = {lat_deg:.1f}°N\n\n"
         f"Output:\n"
+        f"Rmax = {Rmax_km:.1f} km\n"
         f"R0 = {R0_km:.1f} km"
     )
     ax1.text(
