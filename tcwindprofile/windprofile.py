@@ -126,7 +126,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     rr_outer_mask = rr_full > Rmax_m
     vv_outsideRmax[rr_outer_mask] = Vmaxmean_ms * (rr_full[rr_outer_mask] / Rmax_m)**alp_outer
     
-    alp_eye = 2  # quadratic profile in eye
+    alp_eye = 1  # 1 = linear; 2 = quadratic profile in eye
     vv_eye = Vmaxmean_ms * (rr_full / Rmax_m)**alp_eye
     vv_MR = np.concatenate((vv_eye[rr_full <= Rmax_m], vv_outsideRmax[rr_full > Rmax_m]))
     
@@ -142,7 +142,7 @@ def generate_wind_profile(Vmaxmean_ms, Rmax_km, R34ktmean_km, lat, plot=False):
     rr_beyondR34ktmean = rr_full[ii_temp]
     vv_MR_beyondR34ktmean = vv_MR[ii_temp]
     vv_E04approx_beyondR34ktmean = vv_E04approx[ii_temp]
-    R_transitionouteredge = R34ktmean_m + (R0_km*1000 - R34ktmean_m)* (1 / 2)   #1/2 of the distance from R34kt to R0
+    R_transitionouteredge = R34ktmean_m + (R0_km*1000 - R34ktmean_m)* (3 / 3)   #set to R0; played with smaller radii but can give weird kinks
     def taper_cubic(r, Rin, Rout):
         """1 at Rin, 0 at Rout, derivative continuous at both, smooth cubic Hermite."""
         s = (r - Rin) / (Rout - Rin)
