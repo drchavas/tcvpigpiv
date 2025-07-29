@@ -1,16 +1,16 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='tcwindprofile',
-    version='1.1.1',
+    name='tcvpigpiv',
+    version='0.0.1',
     packages=find_packages(),
     install_requires=[],
     author='Dan Chavas',
     author_email='drchavas@gmail.com',
-    description='Create a fast and robust radial profile of the tropical cyclone rotating wind from inputs Vmax, R34kt, Rmax, and latitude',
+    description='Calculate the tropical cyclone ventilated Potential Intensity (vPI) and the Genesis Potential Index using vPI (GPIv) from gridded datafiles. See Chavas Camargo Tippett (2025, J. Clim.) for details.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/drchavas/tcwindprofile',
+    url='https://github.com/drchavas/tcvpigpiv',
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
