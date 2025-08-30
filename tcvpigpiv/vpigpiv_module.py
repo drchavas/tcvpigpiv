@@ -95,7 +95,8 @@ def get_saturation_entropy(p, T):
 # --- Core Component Calculation Functions ---
 
 def calculate_potential_intensity(ds, sst_var: str = 'SSTK', sp_var: str = 'SP',
-                                  t_var: str = 'T', q_var: str = 'Q') -> xr.DataArray:
+                                  t_var: str = 'T', q_var: str = 'Q',
+                                  V_reduc: float = 0.8) -> tuple:
     """
     Compute the maximum potential intensity (PI) for each grid point.
 
@@ -130,69 +131,66 @@ def calculate_potential_intensity(ds, sst_var: str = 'SSTK', sp_var: str = 'SP',
 
     Returns
     -------
-    xr.DataArray
-        The maximum potential intensity (vmax) in metres per second for each
-        grid point.
+    tuple
+        A tuple containing:
+        - vmax (xr.DataArray): Maximum potential intensity in m/s.
+        - To (xr.DataArray): Outflow temperature in K.
+        - asdeq (xr.DataArray): Air–sea entropy disequilibrium term
     """
     print("  Calculating Potential Intensity (PI)...")
 
+    # Constants
+    CKCD = 0.9  #0.9 is default in tcpypi; assumed constant ratio of enthalpy to momentum exchange coefficients
+
     # Convert SST from Kelvin to Celsius
     sst_c = ds[sst_var] - 273.15
-    
-    # Use surface pressure as provided (units of Pa) for consistency with
-    # the original implementation.  Although the PI algorithm expects MSL in
-    # hPa, the upstream Colab script passed the ERA5 surface pressure (Pa)
-    # directly into ``pi`` and produced the expected results.  Converting
-    # to hPa introduced small but noticeable differences in PI and vPI.  To
-    # replicate the original behaviour we therefore leave the surface
-    # pressure in its native units.
+    sst_k = ds[sst_var]
+
+    # Use surface pressure as provided (Pa) for consistency
     sp_hpa = ds[sp_var]
 
     # Convert temperature profile from Kelvin to Celsius
     t_c = ds[t_var] - 273.15
-    # Specific humidity in kg/kg → mixing ratio in g/kg
+
+    # Convert specific humidity to mixing ratio in g/kg
     q = ds[q_var]
 
-    # Ensure the level coordinate is ordered from highest pressure to lowest
+    # Ensure pressure levels are in descending order (highest pressure first)
     levels = ds['level']
     level_vals = levels.values
     if level_vals.size > 1 and level_vals[0] < level_vals[-1]:
-        # Reverse the order if the first value is smaller (i.e. lower pressure)
         level_desc = levels[::-1]
     else:
         level_desc = levels
 
-    # Reindex temperature and humidity to match descending pressure levels
     t_c_desc = t_c.reindex(level=level_desc)
     q_gkg_desc = (q * 1000.0).reindex(level=level_desc)
 
     # Apply the potential intensity calculation
-    vmax, _, _, _, _ = xr.apply_ufunc(
+    vmax, _, _, To_k, _ = xr.apply_ufunc(
         pi,
         sst_c,
         sp_hpa,
         level_desc,
         t_c_desc,
         q_gkg_desc,
-        kwargs=dict(CKCD=1, ascent_flag=0, diss_flag=1, ptop=50, miss_handle=1),
-        input_core_dims=[
-            [],        # sst_c has no level dimension
-            [],        # sp_hpa has no level dimension
-            ['level'], # pressure vector has level dimension
-            ['level'], # temperature profile has level dimension
-            ['level']  # mixing ratio has level dimension
-        ],
-        output_core_dims=[
-            [], [], [], [], []
-        ],
+        kwargs=dict(CKCD=CKCD, ascent_flag=0, diss_flag=1, ptop=50, miss_handle=1, V_reduc=V_reduc),
+        input_core_dims=[[], [], ['level'], ['level'], ['level']],
+        output_core_dims=[[], [], [], [], []],
         vectorize=True,
         output_dtypes=[float] * 5
     )
-    vmax.attrs = {
-        'long_name': 'Potential Intensity',
-        'units': 'm/s'
-    }
-    return vmax
+
+    # Calculate air-sea disequilibrium term:
+    asdeq = vmax**2 * (1.0 / CKCD) * To_k / (sst_k * (sst_k - To_k))
+
+    # Add metadata
+    vmax.attrs = {'long_name': 'Potential Intensity', 'units': 'm/s'}
+    # To_k.attrs = {'long_name': 'Outflow temperature', 'units': 'K'}
+    asdeq.attrs = {'long_name': 'Air-Sea Entropy Disequilibrium Term', 'units': 'J/kg/K'}
+
+    return vmax, asdeq
+
 
 def calculate_vws(ds, u_var='U', v_var='V'):
     """
@@ -216,7 +214,9 @@ def calculate_vws(ds, u_var='U', v_var='V'):
     vws.attrs = {'long_name': 'Vertical Wind Shear (200-850 hPa)', 'units': 'm/s'}
     return vws
 
-def calculate_entropy_deficit(ds, sst_var='SSTK', sp_var='SP', t_var='T', q_var='Q'):
+def calculate_entropy_deficit(ds, asdeq, sp_var='SP', t_var='T', q_var='Q'):
+# def calculate_entropy_deficit(ds, sst_var='SSTK', sp_var='SP', t_var='T', q_var='Q'):
+
     """
     Calculate the entropy deficit parameter (Chi).
 
@@ -253,7 +253,7 @@ def calculate_entropy_deficit(ds, sst_var='SSTK', sp_var='SP', t_var='T', q_var=
     # Extract data arrays
     T = ds[t_var]
     q = ds[q_var]
-    sst = ds[sst_var]
+    # sst = ds[sst_var]
     psfc = ds[sp_var]
     
     # Get values at specific levels.  For the mid‑tropospheric values we
@@ -274,10 +274,10 @@ def calculate_entropy_deficit(ds, sst_var='SSTK', sp_var='SP', t_var='T', q_var=
     # on the remote file format these may originally have been named '2T' or
     # 'T2M' (and '2D' or 'D2M'); they are renamed to 'T2M' and 'D2M' when
     # merging into ``ds``.
-    T2m = ds['T2M']
-    Td2m = ds['D2M']
-    print("T2m: min =", np.nanmin(T2m).item(), ", max =", np.nanmax(T2m).item())
-    print("Td2m: min =", np.nanmin(Td2m).item(), ", max =", np.nanmax(Td2m).item())
+    # T2m = ds['T2M']
+    # Td2m = ds['D2M']
+    # print("T2m: min =", np.nanmin(T2m).item(), ", max =", np.nanmax(T2m).item())
+    # print("Td2m: min =", np.nanmin(Td2m).item(), ", max =", np.nanmax(Td2m).item())
     
     # Compute the near‑surface (2 m) mixing ratio from the dewpoint and
     # surface pressure.  The vapor pressure at the dewpoint is the saturation
@@ -285,24 +285,34 @@ def calculate_entropy_deficit(ds, sst_var='SSTK', sp_var='SP', t_var='T', q_var=
     # employed in the entropy functions.  The mixing ratio is given by
     # r_v = 0.622 * e / (p_sfc - e).  Note that ``psfc`` is the surface
     # pressure in Pa and broadcasts over the horizontal dimensions.
-    e_surf = 611.2 * np.exp(17.67 * (Td2m - 273.15) / (Td2m - 29.65))
-    rv_2m = 0.622 * e_surf / (psfc - e_surf)
-    print("esurf: min =", np.nanmin(e_surf).item(), ", max =", np.nanmax(e_surf).item())
-    print("rv_2m: min =", np.nanmin(rv_2m).item(), ", max =", np.nanmax(rv_2m).item())
+    # e_surf = 611.2 * np.exp(17.67 * (Td2m - 273.15) / (Td2m - 29.65))
+    # rv_2m = 0.622 * e_surf / (psfc - e_surf)
+    # print("esurf: min =", np.nanmin(e_surf).item(), ", max =", np.nanmax(e_surf).item())
+    # print("rv_2m: min =", np.nanmin(rv_2m).item(), ", max =", np.nanmax(rv_2m).item())
 
     # Calculate entropy components using the helper functions
     sm_600 = get_entropy(p=60000., T=T_600, rv=rv_600)
     sm_star_600 = get_saturation_entropy(p=60000., T=T_600)
-    s_b = get_entropy(p=psfc, T=T2m, rv=rv_2m)
-    s_SST_star = get_saturation_entropy(p=psfc, T=sst)
+    # s_b = get_entropy(p=psfc, T=T2m, rv=rv_2m)
+    # s_SST_star = get_saturation_entropy(p=psfc, T=sst)
+
 
     print("sm_600: min =", np.nanmin(sm_600).item(), ", max =", np.nanmax(sm_600).item())
     print("sm_star_600: min =", np.nanmin(sm_star_600).item(), ", max =", np.nanmax(sm_star_600).item())
-    print("s_b: min =", np.nanmin(s_b).item(), ", max =", np.nanmax(s_b).item())
-    print("s_SST_star: min =", np.nanmin(s_SST_star).item(), ", max =", np.nanmax(s_SST_star).item())
+    # print("s_b: min =", np.nanmin(s_b).item(), ", max =", np.nanmax(s_b).item())
+    # print("s_SST_star: min =", np.nanmin(s_SST_star).item(), ", max =", np.nanmax(s_SST_star).item())
     
     # Calculate Chi
-    chi = (sm_star_600 - sm_600) / (s_SST_star - s_b)
+    numerator = sm_star_600 - sm_600
+    # chi = numerator / (s_SST_star - s_b)
+    
+    print("numerator type:", type(numerator))
+    print("asdeq type:", type(asdeq))
+    print("numerator dtype:", getattr(numerator, 'dtype', 'unknown'))
+    print("asdeq dtype:", getattr(asdeq, 'dtype', 'unknown'))
+
+    chi = numerator / asdeq
+
     
     # Convert back to DataArray with original coordinates
     chi = xr.DataArray(chi, coords=psfc.coords, dims=psfc.dims,
@@ -362,9 +372,9 @@ def compute_gpiv_from_dataset(ds):
     sp_var = 'SP'
     
     # --- Calculate all components ---
-    PI = calculate_potential_intensity(ds, sst_var, sp_var, t_var, q_var)
+    PI, asdeq = calculate_potential_intensity(ds, sst_var, sp_var, t_var, q_var, V_reduc=1.0)  #if you want to reduce vmax, do it at the very end for yourself
     VWS = calculate_vws(ds, u_var, v_var)
-    Chi = calculate_entropy_deficit(ds, sst_var, sp_var, t_var, q_var)
+    Chi = calculate_entropy_deficit(ds, asdeq=asdeq, sp_var=sp_var, t_var=t_var, q_var=q_var)
     eta_c = calculate_etac(ds, vo_var)
     
     # --- Combine components ---
@@ -481,26 +491,26 @@ def load_era5_data(year: int, month: int) -> xr.Dataset:
     vo = xr.open_dataset(url)
     print(f"vo={vo}")
     
-    # Load 2‑metre temperature and dewpoint.  Parameter IDs 167 (2T) and 168 (2D)
-    era5_filecode = '167_2t'
-    url = f'https://thredds.rda.ucar.edu/thredds/dodsC/files/g/d633001_nc/e5.moda.an.sfc/{year}/e5.moda.an.sfc.128_{era5_filecode}.ll025sc.{year}010100_{year}120100.nc'
-    t2m = xr.open_dataset(url)
-    print(f"t2m={t2m}")
-    print("2T min:", t2m['VAR_2T'].min().item(), "K")
-    print("2T max:", t2m['VAR_2T'].max().item(), "K")
+    # # Load 2‑metre temperature and dewpoint.  Parameter IDs 167 (2T) and 168 (2D)
+    # era5_filecode = '167_2t'
+    # url = f'https://thredds.rda.ucar.edu/thredds/dodsC/files/g/d633001_nc/e5.moda.an.sfc/{year}/e5.moda.an.sfc.128_{era5_filecode}.ll025sc.{year}010100_{year}120100.nc'
+    # t2m = xr.open_dataset(url)
+    # print(f"t2m={t2m}")
+    # print("2T min:", t2m['VAR_2T'].min().item(), "K")
+    # print("2T max:", t2m['VAR_2T'].max().item(), "K")
     
-    era5_filecode = '168_2d'
-    url = f'https://thredds.rda.ucar.edu/thredds/dodsC/files/g/d633001_nc/e5.moda.an.sfc/{year}/e5.moda.an.sfc.128_{era5_filecode}.ll025sc.{year}010100_{year}120100.nc'
-    d2m = xr.open_dataset(url)
-    print(f"d2m={d2m}")
-    print("2d min:", d2m['VAR_2D'].min().item(), "K")
-    print("2d max:", d2m['VAR_2D'].max().item(), "K")
+    # era5_filecode = '168_2d'
+    # url = f'https://thredds.rda.ucar.edu/thredds/dodsC/files/g/d633001_nc/e5.moda.an.sfc/{year}/e5.moda.an.sfc.128_{era5_filecode}.ll025sc.{year}010100_{year}120100.nc'
+    # d2m = xr.open_dataset(url)
+    # print(f"d2m={d2m}")
+    # print("2d min:", d2m['VAR_2D'].min().item(), "K")
+    # print("2d max:", d2m['VAR_2D'].max().item(), "K")
     
 
-    # For t2m and d2m, Get the actual data variable from each dataset
-    # Not sure why this is needed but it is
-    t2m_var = t2m['VAR_2T']
-    d2m_var = d2m['VAR_2D']
+    # # For t2m and d2m, Get the actual data variable from each dataset
+    # # Not sure why this is needed but it is
+    # t2m_var = t2m['VAR_2T']
+    # d2m_var = d2m['VAR_2D']
     
     # Sanity check values before merging
 #    print("2T min:", t2m_var.min().item(), "K")
@@ -518,80 +528,81 @@ def load_era5_data(year: int, month: int) -> xr.Dataset:
         q.Q.isel(time=idx),
         u.U.isel(time=idx),
         v.V.isel(time=idx),
-        vo.VO.isel(time=idx),
-        t2m_var.isel(time=idx).rename('T2M'),
-        d2m_var.isel(time=idx).rename('D2M')
+        vo.VO.isel(time=idx)
+        # vo.VO.isel(time=idx),
+        # t2m_var.isel(time=idx).rename('T2M'),
+        # d2m_var.isel(time=idx).rename('D2M')
     ])
     
     
-    # -----------------------------------------------------------------------------
-    # Sanity check: plot the difference between sea surface temperature and
-    # near‑surface (2 m) air temperature.  This helps confirm that the 2 m fields
-    # were loaded correctly and have reasonable values relative to the SST.  The
-    # difference is computed in Kelvin (equivalent to Celsius difference).  Blue
-    # shades indicate where the 2 m air is cooler than the underlying sea
-    # surface, while red shades indicate warmer air.
+    # # -----------------------------------------------------------------------------
+    # # Sanity check: plot the difference between sea surface temperature and
+    # # near‑surface (2 m) air temperature.  This helps confirm that the 2 m fields
+    # # were loaded correctly and have reasonable values relative to the SST.  The
+    # # difference is computed in Kelvin (equivalent to Celsius difference).  Blue
+    # # shades indicate where the 2 m air is cooler than the underlying sea
+    # # surface, while red shades indicate warmer air.
     
-    import matplotlib.pyplot as plt
-    import cartopy.crs as ccrs
-    import cartopy.feature as cfeature
+    # import matplotlib.pyplot as plt
+    # import cartopy.crs as ccrs
+    # import cartopy.feature as cfeature
     
-    # Ensure SST and T2m are selected for the correct time (e.g., January)
-    sst_month = sstk['SSTK'].isel(time=month-1)  # K
-    t2m_month = t2m['VAR_2T'].isel(time=month-1)     # K
+    # # Ensure SST and T2m are selected for the correct time (e.g., January)
+    # sst_month = sstk['SSTK'].isel(time=month-1)  # K
+    # t2m_month = t2m['VAR_2T'].isel(time=month-1)     # K
     
-    # Compute difference
-    delta_sst_t2m = sst_month - t2m_month
+    # # Compute difference
+    # delta_sst_t2m = sst_month - t2m_month
     
-    # Plot
-    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 5))
-    p = ax.pcolormesh(
-        delta_sst_t2m.longitude, delta_sst_t2m.latitude, delta_sst_t2m,
-        cmap='coolwarm', shading='auto', vmin=-5, vmax=5,
-        transform=ccrs.PlateCarree()
-    )
-    ax.coastlines()
-    ax.add_feature(cfeature.BORDERS, linewidth=0.5)
-    ax.set_title("SANITY CHECK: SST - T2m (K)")
+    # # Plot
+    # fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 5))
+    # p = ax.pcolormesh(
+    #     delta_sst_t2m.longitude, delta_sst_t2m.latitude, delta_sst_t2m,
+    #     cmap='coolwarm', shading='auto', vmin=-5, vmax=5,
+    #     transform=ccrs.PlateCarree()
+    # )
+    # ax.coastlines()
+    # ax.add_feature(cfeature.BORDERS, linewidth=0.5)
+    # ax.set_title("SANITY CHECK: SST - T2m (K)")
     
-    # Add colorbar with custom ticks
-    cbar = fig.colorbar(p, ax=ax, label='K', orientation='vertical', ticks=np.arange(-5, 5.5, 0.5))
-    plt.show()
+    # # Add colorbar with custom ticks
+    # cbar = fig.colorbar(p, ax=ax, label='K', orientation='vertical', ticks=np.arange(-5, 5.5, 0.5))
+    # plt.show()
     
     
-    # -----------------------------------------------------------------------------
-    # Sanity check: plot the difference between T2m and T2d.
-    # This helps confirm that the 2 m fields
-    # were loaded correctly and have reasonable values relative to the SST.  The
-    # difference is computed in Kelvin (equivalent to Celsius difference).  Blue
-    # shades indicate where the 2 m air is cooler than the underlying sea
-    # surface, while red shades indicate warmer air.
+    # # -----------------------------------------------------------------------------
+    # # Sanity check: plot the difference between T2m and T2d.
+    # # This helps confirm that the 2 m fields
+    # # were loaded correctly and have reasonable values relative to the SST.  The
+    # # difference is computed in Kelvin (equivalent to Celsius difference).  Blue
+    # # shades indicate where the 2 m air is cooler than the underlying sea
+    # # surface, while red shades indicate warmer air.
     
-    import matplotlib.pyplot as plt
-    import cartopy.crs as ccrs
-    import cartopy.feature as cfeature
+    # import matplotlib.pyplot as plt
+    # import cartopy.crs as ccrs
+    # import cartopy.feature as cfeature
     
-    # Ensure SST and T2m are selected for the correct time (e.g., January)
-    t2m_month = t2m['VAR_2T'].isel(time=month-1)     # K
-    d2m_month = d2m['VAR_2D'].isel(time=month-1)     # K
+    # # Ensure SST and T2m are selected for the correct time (e.g., January)
+    # t2m_month = t2m['VAR_2T'].isel(time=month-1)     # K
+    # d2m_month = d2m['VAR_2D'].isel(time=month-1)     # K
     
-    # Compute difference
-    delta_t2m_d2m = t2m_month - d2m_month
+    # # Compute difference
+    # delta_t2m_d2m = t2m_month - d2m_month
     
-    # Plot
-    fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 5))
-    p = ax.pcolormesh(
-        delta_t2m_d2m.longitude, delta_t2m_d2m.latitude, delta_t2m_d2m,
-        cmap='coolwarm', shading='auto', vmin=-5, vmax=5,
-        transform=ccrs.PlateCarree()
-    )
-    ax.coastlines()
-    ax.add_feature(cfeature.BORDERS, linewidth=0.5)
-    ax.set_title("SANITY CHECK: T2m - D2m (K)")
+    # # Plot
+    # fig, ax = plt.subplots(subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(10, 5))
+    # p = ax.pcolormesh(
+    #     delta_t2m_d2m.longitude, delta_t2m_d2m.latitude, delta_t2m_d2m,
+    #     cmap='coolwarm', shading='auto', vmin=-5, vmax=5,
+    #     transform=ccrs.PlateCarree()
+    # )
+    # ax.coastlines()
+    # ax.add_feature(cfeature.BORDERS, linewidth=0.5)
+    # ax.set_title("SANITY CHECK: T2m - D2m (K)")
     
-    # Add colorbar with custom ticks
-    cbar = fig.colorbar(p, ax=ax, label='K', orientation='vertical', ticks=np.arange(-5, 5.5, 0.5))
-    plt.show()
+    # # Add colorbar with custom ticks
+    # cbar = fig.colorbar(p, ax=ax, label='K', orientation='vertical', ticks=np.arange(-5, 5.5, 0.5))
+    # plt.show()
     
     return ds
 
