@@ -5,7 +5,7 @@ A Python package to calculate the tropical cyclone ventilated Potential Intensit
 See Chavas, Camargo, & Tippett (2025, J. Clim.) for details.
 
 **Author:** Dan Chavas (2025) 
-**Collaborators:** Jose Ocegueda Sanchez (2025)
+**Collaborators:** Aaron Kruskie, Jose Ocegueda Sanchez (2025)
 
 ## Installation
 
