@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: tcvpigpiv
-Version: 0.3.0
+Version: 0.3.3
 Summary: Calculate the tropical cyclone ventilated Potential Intensity (vPI) and the Genesis Potential Index using vPI (GPIv) from gridded datafiles. Supports both monthly mean and hourly ERA5 data. See Chavas Camargo Tippett (2025, J. Clim.) for details.
 Home-page: https://github.com/drchavas/tcvpigpiv
 Author: Dan Chavas, Jose Ocegueda Sanchez
@@ -48,7 +48,8 @@ A Python package to calculate the tropical cyclone ventilated Potential Intensit
 
 See Chavas, Camargo, & Tippett (2025, J. Clim.) for details.
 
-**Authors:** Dan Chavas (2025), Jose Ocegueda Sanchez (2025)
+**Author:** Dan Chavas (2025)  
+**Collaborators:** Aaron Kruskie, Jose Ocegueda Sanchez (2025)
 
 ## Installation
 
