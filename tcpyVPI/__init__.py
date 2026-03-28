@@ -1,8 +1,8 @@
 """
-tcvpigpiv - Tropical Cyclone Ventilated Potential Intensity and Genesis Potential Index
+tcpyVPI - Tropical Cyclone Ventilated Potential Intensity and Genesis Potential Index
 
 A Python package to calculate the tropical cyclone ventilated Potential
-Intensity (vPI) and the Genesis Potential Index using vPI (GPIv) from
+Intensity (vPI), and also the Genesis Potential Index using vPI (GPIv), from
 gridded datafiles.
 
 This package supports both monthly mean and hourly ERA5 reanalysis data
@@ -42,7 +42,7 @@ from .climatology import (
     compute_standardized_anomalies,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.1.0"
 __author__ = "Dan Chavas, Jose Ocegueda Sanchez"
 
 __all__ = [

@@ -1,4 +1,4 @@
-# tcvpigpiv 
+# tcpyVPI # note the capitalization 
 
 A Python package to calculate the tropical cyclone ventilated Potential Intensity (vPI) and the Genesis Potential Index using vPI (GPIv) from gridded datafiles. 
 
@@ -10,13 +10,13 @@ See Chavas, Camargo, & Tippett (2025, J. Clim.) for details.
 ## Installation
 
 ```bash
-pip install tcvpigpiv
+pip install tcpyVPI
 ```
 
 Or install from source:
 ```bash
-git clone https://github.com/drchavas/tcvpigpiv.git
-cd tcvpigpiv
+git clone https://github.com/drchavas/tcpyVPI.git
+cd tcpyVPI
 pip install -e .
 ```
 
@@ -33,7 +33,7 @@ pip install -e .
 ### Monthly Mean Computation
 
 ```python
-from tcvpigpiv import run_vpigpiv
+from tcpyVPI import run_vpigpiv
 
 # Compute GPIv for September 2022
 results = run_vpigpiv(2022, 9)
@@ -42,7 +42,7 @@ results = run_vpigpiv(2022, 9)
 ### Hourly Computation
 
 ```python
-from tcvpigpiv import run_vpigpiv_hourly
+from tcpyVPI import run_vpigpiv_hourly
 
 # Compute GPIv for August 15, 2020 at 12Z
 results = run_vpigpiv_hourly(2020, 8, 15, hour=12)
@@ -51,7 +51,7 @@ results = run_vpigpiv_hourly(2020, 8, 15, hour=12)
 ### With Anomalies
 
 ```python
-from tcvpigpiv import run_vpigpiv_hourly
+from tcpyVPI import run_vpigpiv_hourly
 
 # First, compute or load a climatology
 results = run_vpigpiv_hourly(
@@ -66,7 +66,7 @@ results = run_vpigpiv_hourly(
 The package provides flexible data loading from NCAR RDA THREDDS servers:
 
 ```python
-from tcvpigpiv import load_era5_data, load_era5_hourly
+from tcpyVPI import load_era5_data, load_era5_hourly
 
 # Load monthly mean data
 ds_monthly = load_era5_data(2022, 9, data_source='monthly')
@@ -95,7 +95,7 @@ The package accesses ERA5 data via THREDDS with the following structure:
 ## Climatology Computation
 
 ```python
-from tcvpigpiv import compute_monthly_climatology, compute_gpiv_from_dataset
+from tcpyVPI import compute_monthly_climatology, compute_gpiv_from_dataset
 
 # Compute 40-year climatology (1980-2020)
 climatology = compute_monthly_climatology(
@@ -108,7 +108,7 @@ climatology = compute_monthly_climatology(
 ## Computing Components Individually
 
 ```python
-from tcvpigpiv import (
+from tcpyVPI import (
     load_era5_data,
     calculate_potential_intensity,
     calculate_vws,
